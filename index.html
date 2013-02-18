@@ -1,0 +1,76 @@
+<!doctype html> 
+<html> 
+<head> 
+  <title>LightMap demo</title> 
+  <style type="text/css"> 
+body {
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light",
+             "Helvetica Neue", sans-serif;
+    font-weight: 300;
+    background: #f8f8f8;
+    margin-top: 0px;
+    margin-left: 0px;
+    margin-bottom: 0px;
+    margin-right: 0px;
+}
+
+div.content {
+    width: 100%;
+    height : 100%;
+    
+}
+  </style>
+  <script type="text/javascript" src="lightmap.js"></script> 
+  <script type="text/javascript"> 
+  var map;
+  var viewportwidth;
+  var viewportheight; 
+  var marker = null;
+  window.onload = function() {
+   
+    if (typeof window.innerWidth != 'undefined'){// the more standards compliant browsers (mozilla/netscape/opera/IE7) use window.innerWidth and window.innerHeight
+      viewportwidth = window.innerWidth;
+      viewportheight = window.innerHeight;
+    }
+    // IE6 in standards compliant mode (i.e. with a valid doctype as the first line in the document)
+    else if (typeof document.documentElement != 'undefined'
+        && typeof document.documentElement.clientWidth !=
+        'undefined' && document.documentElement.clientWidth != 0){
+      viewportwidth = document.documentElement.clientWidth;
+      viewportheight = document.documentElement.clientHeight;
+    }
+    else{// older versions of IE
+      viewportwidth = document.getElementsByTagName('body')[0].clientWidth;
+      viewportheight = document.getElementsByTagName('body')[0].clientHeight;
+    }
+
+    map = new LightMap({
+                          id : "mapcanvas",
+                          height: viewportheight,
+                          width: viewportwidth,
+                          zoom:14,
+                          center: {lon:-99.15262006530759,lat:19.379173823369506},
+                          cssClass: "mappy",
+                          controls:true,
+                          container:"content" 
+                        });
+
+    map.getAllTiles();
+    setTimeout("marker = new map.Marker({lat:19.379173823369506,lon:-99.15262006530759,src:'resources/arrow.png',xoffset:10,yoffset:34});",500);
+    //setTimeout("marker.destroy()",10000);
+    //setTimeout("map.setCenter(19.379173823369506,-99.15262006530759);",600);
+    //setTimeout("map.setCenter(19.379173823369506,-99.15262006530759,14);",2000);
+    //setTimeout("map.setCenter(19.379173823369506,-99.15262006530759,13);",20000);
+    map.addCustomEvent("idle",function(){
+      console.log(map.withInViewport(marker.lat , marker.lon));
+    })
+  }
+
+  </script> 
+</head> 
+<body> 
+    <div id="content" class="content">
+       <div id="mapcanvas"></div>
+    </div> 
+</body> 
+</html>
