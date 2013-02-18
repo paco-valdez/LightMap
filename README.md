@@ -6,7 +6,7 @@ A Javascript Light Map API
 
 Usage:
 -------------
-<code>
+
     map = new LightMap({
                           id : "mapcanvas",
                           height : 600,
@@ -16,11 +16,11 @@ Usage:
                           controls : true,
                           container : "container" 
                         });
-</code>
+
 
 Available Parameters:
 -------------
-<p>
+
     id : wrapping map div id, obligatory
     container : parent div id of the map, obligatory.
     center : center of the map in lat-lon coordinates default {lon:-99.17158864746091,lat:19.424792788880602}
@@ -35,7 +35,7 @@ Available Parameters:
     divID :  Name of the scrollable div that will be created, default viewingBox
     cssClass : The CSS class attached to the wrapping map div.
     getURL(zoom,x,y) : Function that will override the default openstreetmaps tiles retrieving function. 
-</p>
+
 
 History
 -------------
@@ -115,24 +115,24 @@ Acknowledgements:
 License:
 -------------
 
-<p>
-The MIT License (MIT)
-Copyright (c) 2012 Francisco Valdez de la Fuente
-Copyright (c) 2011 Charlie Andrews
-Copyright (c) 2007 Klokan Petr Pridal
+
+    The MIT License (MIT)
+    Copyright (c) 2012 Francisco Valdez de la Fuente
+    Copyright (c) 2011 Charlie Andrews
+    Copyright (c) 2007 Klokan Petr Pridal
 
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files 
-(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, 
-merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is 
-furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files 
+    (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, 
+    merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is 
+    furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
-OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE 
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR 
-IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-</p>
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE 
+    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR 
+    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 
 
