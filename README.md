@@ -114,10 +114,10 @@ Acknowledgements:
 
 TO-DO:
 -------------
-[ ] Add scrolling event for zooming.
-[ ] Identation fixes.
-[ ] Add comments to explain the code.
-[ ] Add aditional layers.
+* Add scrolling event for zooming.
+* Identation fixes.
+* Add comments to explain the code.
+* Add aditional layers.
 
 License:
 -------------
