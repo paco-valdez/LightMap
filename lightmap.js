@@ -161,109 +161,10 @@ var LightMap = function(){
   //var LightMap.originShift = 2 * Math.PI * 6378137 / 2.0; // 20037508.342789244 //changed as public static vairable
 
   var constructor = function LightMap(param) {
-    var m = this; //instance reference
+    var m = this; //instance reference (m is for map)
     
-    //Private Methods:
-    /**
-     * Private Function:   Resolution()
-     * Description: wrapper for LightMap.Resolution
-     *
-     * Parameters:  zoom - zoom level
-     */
-    function Resolution(zoom){
-      return LightMap.Resolution(zoom,m.initialResolution);
-    }
-    
-    /**
-     * Private Function:        MetersToTile()
-     * Description: wrapper for LightMap.MetersToTile()
-     *
-     * Parameters:  mx - Longitude
-     *              my - Latitude
-     *              zoom - zoom level
-     */
-    function  MetersToTile(mx, my, zoom){
-      return LightMap.MetersToTile(mx, my, zoom,m.tileSize);
-    }
-    
-    /**
-     * Private Function:        LatLonToTile()
-     * Description: Returns tile for given mercator coordinates
-     *
-     * Parameters:  lat - Latitude
-     *              lon - Longitude
-     *              zoom - zoom level
-     *              tms - use TMS or Google Tiles
-     */
-    function  LatLonToTile(lat, lon, zoom, tms){
-      var p = LightMap.LatLonToMeters( lat, lon );
-      p = MetersToTile( p.x, p.y, zoom );
-      if(tms)
-        return p;
-      else
-        return LightMap.GoogleTile(p.x, p.y, zoom);
-    }
-    
-    /**
-     * Private Function:        PixelsToMeters()
-     * Description: Converts pixel coordinates in given zoom level of pyramid to EPSG:900913
-     *
-     * Parameters:  px - Longitude
-     *              py - Latitude
-     *              zoom - zoom level
-     */
-    function PixelsToMeters(px, py, zoom){
-        res = Resolution( zoom )
-        mx = px * res - LightMap.originShift
-        my = py * res - LightMap.originShift
-        return {x:mx,y: my}
-    }
-    
-    /**
-     * Private Function:        MetersToLatLon()
-     * Description: Converts XY point from Spherical Mercator EPSG:900913 to lat/lon in WGS84 Datum
-     *
-     * Parameters:  mx - Longitude
-     *              my - Latitude
-     */
-    function MetersToLatLon(mx, my){
-        var lon = (mx / LightMap.originShift) * 180.0
-        var lat = (my / LightMap.originShift) * 180.0
 
-        lat = 180 / Math.PI * (2 * Math.atan( Math.exp( lat * Math.PI / 180.0)) - Math.PI / 2.0)
-        return {lat:lat,lon:lon}
-    }
-    
-    /**
-     * Private Function:        TileBounds()
-     * Description: Returns bounds of the given tile in EPSG:900913 coordinates
-     *
-     * Parameters:  tx - Longitude
-     *              ty - Latitude
-     *              zoom - zoom level
-     */
-    function TileBounds(tx, ty, zoom){
-        var pmin = PixelsToMeters( tx*m.tileSize, ty*m.tileSize, zoom )
-        var pmax = PixelsToMeters( (tx+1)*m.tileSize, (ty+1)*m.tileSize, zoom )
-        return [ pmin.x, pmin.y, pmax.x, pmax.y ]
-    }
-    
-    /**
-     * Private Function:        TileLatLonBounds()
-     * Description: Returns bounds of the given tile in latutude/longitude using WGS84 datum
-     *
-     * Parameters:  tx - Longitude
-     *              ty - Latitude
-     *              zoom - zoom level
-     */
-    function TileLatLonBounds(tx, ty, zoom ){
-        var bounds = TileBounds( tx, ty, zoom)
-        var pmin = MetersToLatLon(bounds[0], bounds[1])
-        var pmax = MetersToLatLon(bounds[2], bounds[3])
-         
-        return [ pmin.lat, pmin.lon, pmax.lat, pmax.lon ]
-    }
-    
+    // Private Instance Functions:
     /**
      * Private Function:        checkMarkers()
      * Description: Check if onhold markers can be drawn
@@ -284,7 +185,6 @@ var LightMap = function(){
      */
     function boundsChanged(){
       checkMarkers();
-      
     }
     
     
@@ -330,16 +230,20 @@ var LightMap = function(){
             m.getTile(tiles[i][j], m.zoom, xx, yy, i+ii+m.minX, j+jj+m.minY);
           }
           if(i==0 && j == 0){
-            var p = LightMap.GoogleTile(xx, yy, m.zoom) //Convert again to google tile to return to TMS
-            var bound = TileLatLonBounds(p.x, p.y, m.zoom ) //[ pmin.lat, pmin.lon, pmax.lat, pmax.lon ]
+            var p = {x:xx,y:yy};
+            if(!m.tms)
+              p = LightMap.GoogleTile(xx, yy, m.zoom) //Convert again to google tile to return to TMS
+            var bound = LightMap.TileLatLonBounds(p.x, p.y, m.zoom, m.tileSize, m.initialResolution) //[ pmin.lat, pmin.lon, pmax.lat, pmax.lon ]
             m.bounds[2]=bound[2] //max lat
             m.bounds[1]=bound[1] //min lon
             m.boundsTMS[2] = xx
             m.boundsTMS[1] = yy
             bound = null;
           } else if(i+1 == newXsize && j+1 == newYsize){
-            var p = LightMap.GoogleTile(xx, yy, m.zoom) //Convert again to google tile to return to TMS
-            var bound = TileLatLonBounds(p.x, p.y, m.zoom ) //[ pmin.lat, pmin.lon, pmax.lat, pmax.lon ]
+            var p = {x:xx,y:yy};
+            if(!m.tms)
+              p = LightMap.GoogleTile(xx, yy, m.zoom) //Convert again to google tile to return to TMS
+            var bound = LightMap.TileLatLonBounds(p.x, p.y, m.zoom, m.tileSize, m.initialResolution) //[ pmin.lat, pmin.lon, pmax.lat, pmax.lon ]
             m.bounds[0]=bound[0] //min lat
             m.bounds[3]=bound[3] //max lon
             m.boundsTMS[0] = xx
@@ -356,7 +260,7 @@ var LightMap = function(){
         m.minX += ii;
       if(y<0)
         m.minY += jj;
-      boundsChanged();//handle bounds change event before permitting a new reallocation
+      boundsChanged();//handle bounds change event before allowing a new reallocation
       m.reallocating = false;
     }
 
@@ -398,8 +302,58 @@ var LightMap = function(){
         alert(err)
       }
     }
-    
 
+    /**
+     * Private Function:        loadRing
+     * Description: Recursive function that renders the map tiles in a concentric order starting in the center of the map
+     * Parameters:  
+     *              r - ring order, where 1 is the tile in the center
+     *              xSize,ySize - Number of tiles that fits in the viewport
+     *              x,y - Position of the center of the map
+     */
+    function loadRing(r,xSize,ySize,x,y){
+      var size = (r*2)-1;
+      if( (size>xSize && size>ySize && xSize%2!=0 && ySize%2!=0) || (size>xSize+1 && size>ySize && xSize%2==0 && ySize%2!=0) || (size>xSize && size>ySize+1 && xSize%2!=0 && ySize%2==0) || (size>xSize+1 && size>ySize+1 && xSize%2==0 && ySize%2==0) )
+        return;
+      if(r<2){
+        if(r==1)
+          m.getTile(m.tiles[x][y], m.zoom, m.center.x - m.Xcenter + x, m.center.y - m.Ycenter + y, x, y);
+      }else{
+        for (var i = x-r+1; i < x+r; i++) {
+          for (var j = y-r+1; j < y+r; j++) {
+            if(i<xSize && j<ySize && (i== x-r+1 || i==x+r-1 || j==y-r+1 || j==y+r-1)  && i>=0 && j>=0){
+              m.getTile(m.tiles[i][j], m.zoom, m.center.x - m.Xcenter + i, m.center.y - m.Ycenter + j, i, j);
+            }
+          }
+        }
+      }
+      loadRing(r+1,xSize,ySize,x,y);
+    }
+
+    /**
+     * Private Function:        getTile
+     * Description: Initializes and render a given tile in the viewport
+     * Parameters:  
+     *              container
+     *              zoom,x,y - in tiles à la google coordinates
+     *              xpos, ypos - position of the tile within the viewport
+     */
+    function initTile(container,zoom,x,y,xpos,ypos){
+      xpos = parseInt(xpos*m.tileSize)+"px";
+      ypos = parseInt(ypos*m.tileSize)+"px";
+      var subcontainer = new Array();
+      var img = document.createElement("img");
+      img.src = m.loading;
+      img.style.left=xpos;
+      img.style.top=ypos;
+      img.style.position = "absolute";
+      img.style.zIndex=0;
+      subcontainer.push(img);
+      container.appendChild(img);
+      return subcontainer;
+    }
+    
+    //Public instance functions:
     /**
      * Public Function:        withInViewport()
      * Description: Checks if a coordinate is within the viewport bounds.
@@ -410,7 +364,7 @@ var LightMap = function(){
     this.withInViewport = function(lat,lon){
       if(!m.withinBounds(lat,lon))
         return false
-      var pos = LatLonToPixels(lat,lon,m.zeroTile.x,m.zeroTile.y,m.zoom)
+      var pos = LightMap.LatLonToPixels(lat,lon,m.zeroTile.x,m.zeroTile.y,m.zoom,m.tms,m.tileSize,m.initialResolution)
       return pos.x > (0-1)*m.xOffset && pos.x < m.width+((0-1)*m.xOffset) && pos.y > (0-1)*m.yOffset && pos.y < m.height+((0-1)*m.yOffset)
     }
 
@@ -555,34 +509,6 @@ var LightMap = function(){
       **/ 
       return;
     }
-    
-
-    /**
-     * Private Function:        loadRing
-     * Description: Recursive function that renders the map tiles in a concentric order starting in the center of the map
-     * Parameters:  
-     *              r - ring order, where 1 is the tile in the center
-     *              xSize,ySize - Number of tiles that fits in the viewport
-     *              x,y - Position of the center of the map
-     */
-    function loadRing(r,xSize,ySize,x,y){
-      var size = (r*2)-1;
-      if( (size>xSize && size>ySize && xSize%2!=0 && ySize%2!=0) || (size>xSize+1 && size>ySize && xSize%2==0 && ySize%2!=0) || (size>xSize && size>ySize+1 && xSize%2!=0 && ySize%2==0) || (size>xSize+1 && size>ySize+1 && xSize%2==0 && ySize%2==0) )
-        return;
-      if(r<2){
-        if(r==1)
-          m.getTile(m.tiles[x][y], m.zoom, m.center.x - m.Xcenter + x, m.center.y - m.Ycenter + y, x, y);
-      }else{
-        for (var i = x-r+1; i < x+r; i++) {
-          for (var j = y-r+1; j < y+r; j++) {
-            if(i<xSize && j<ySize && (i== x-r+1 || i==x+r-1 || j==y-r+1 || j==y+r-1)  && i>=0 && j>=0){
-              m.getTile(m.tiles[i][j], m.zoom, m.center.x - m.Xcenter + i, m.center.y - m.Ycenter + j, i, j);
-            }
-          }
-        }
-      }
-      loadRing(r+1,xSize,ySize,x,y);
-    }
 
     /**
      * Public Function:        getAllTiles
@@ -614,18 +540,13 @@ var LightMap = function(){
     * Parameters:  
     */
     this.getCenter = function () {
-      var p = LightMap.GoogleTile(m.zeroTile.x, m.zeroTile.y, m.zoom) //Convert again to google tile to return to TMS
-      var bound = TileLatLonBounds(p.x, p.y, m.zoom)
+      var p = {x:m.zeroTile.x,y:m.zeroTile.y};
+      if(!m.tms)
+        p = LightMap.GoogleTile(m.zeroTile.x, m.zeroTile.y, m.zoom) //Convert again to google tile to return to TMS
+      var bound = LightMap.TileLatLonBounds(p.x, p.y, m.zoom, m.tileSize, m.initialResolution)
       var lat = bound[2] - (  (bound[2]-bound[0])/m.tileSize*( (m.yOffset*(-1.0)) + (m.height/2.0) )  );//lat
       var lon = bound[1] + (  (bound[3]-bound[1])/m.tileSize*( (m.xOffset*(-1.0)) + (m.width/2.0) )  );// lon
       return {lat:lat,lon:lon}
-      /*
-      var lat = m.bounds[2] - ( (m.bounds[2] - m.bounds[0]) * (  ( (m.xOffset*(-1.0)) + (m.width/2.0)) / parseFloat(m.XnumberOfTiles*m.tileSize) ) );
-      var lon = m.bounds[1] + ( (m.bounds[3] - m.bounds[1]) * (  ( (m.yOffset*(-1.0)) + (m.height/2.0)) / parseFloat(m.YnumberOfTiles*m.tileSize) ) );
-      console.log(lat)
-      console.log(lon)
-      return {lat:lat,lon:lon}
-      */
     };
     
     /**
@@ -649,25 +570,6 @@ var LightMap = function(){
     };
     
     /**
-      * Private Function:        LatLonToPixels
-      * Description: Gets the distance in pixels from a tile à la Google coordinates to a lat,lon coordinates
-      * Parameters:  lat - The new y offset of the map
-      *              lon - The new x offset of the map
-      *              zoom - zoom level of the new center
-      *              x - Longitude tile à la Google coordinate of the reference
-      *              y - Latitude tile à la Google coordinate of the reference
-      * 
-      */
-    function LatLonToPixels(lat,lon,x,y,zoom){
-       //first translate from lat,lon to x,y,z tiles à la google maps.
-       var p = LatLonToTile(lat, lon, zoom, false);
-       var bounds = TileLatLonBounds(p.x, p.ty ,zoom);
-        //lets get the position of the point within the tile and then 
-        //add the pixels from the tile we were given to the tile we want
-       return {x: (( 1 - ((bounds[3]-lon)/(bounds[3]-bounds[1])))*m.tileSize) + ((p.x - x)*m.tileSize) , y: (((bounds[2]-lat)/(bounds[2]-bounds[0]))*m.tileSize) + ((p.y - y)*m.tileSize) }
-    }
-    
-    /**
       * Public Function:        setCenter() 
       * Description: Centers the map to a given lat lon position
       * Parameters:  lat - The new y offset of the map
@@ -681,7 +583,7 @@ var LightMap = function(){
       zoom = typeof zoom == "undefined" ?  m.zoom : zoom;
       if(m.withinBounds(lat,lon) && zoom==m.zoom){//new coordinate is within bounds and same zoom
         //lets find out how many pixels we have to add from the 0,0 pixel cordinate of the screen
-        var pos = LatLonToPixels(lat,lon,m.zeroTile.x,m.zeroTile.y,zoom);
+        var pos = LightMap.LatLonToPixels(lat,lon,m.zeroTile.x,m.zeroTile.y,zoom,m.tms,m.tileSize,m.initialResolution);
         var xOffsetCenter = (parseInt(pos.x) - parseInt(m.width/2))*(-1);
         var yOffsetCenter = (parseInt(pos.y) - parseInt(m.height/2))*(-1);
         MoveMap(xOffsetCenter , yOffsetCenter);        
@@ -689,37 +591,13 @@ var LightMap = function(){
         m.reallocateMap(lat,lon,zoom,false);
       }
     }
-    
-
-    /**
-     * Private Function:        getTile
-     * Description: Initializes and render a given tile in the viewport
-     * Parameters:  
-     *              container
-     *              zoom,x,y - in tiles à la google coordinates
-     *              xpos, ypos - position of the tile within the viewport
-     */
-    function initTile(container,zoom,x,y,xpos,ypos){
-      xpos = parseInt(xpos*m.tileSize)+"px";
-      ypos = parseInt(ypos*m.tileSize)+"px";
-      var subcontainer = new Array();
-      var img = document.createElement("img");
-      img.src = m.loading;
-      img.style.left=xpos;
-      img.style.top=ypos;
-      img.style.position = "absolute";
-      img.style.zIndex=0;
-      subcontainer.push(img);
-      container.appendChild(img);
-      return subcontainer;
-    }
 
     /**
       * Public Function:        calculateSize
       * Description: calculates the number of tiles required to fill the viewport
       * Parameters: 
       */
-    m.calculateSize = function(){
+    this.calculateSize = function(){
       m.XnumberOfTiles = parseInt(m.width/m.tileSize)+1;
       m.YnumberOfTiles = parseInt(m.height/m.tileSize)+1;
       if(m.XnumberOfTiles==1)
@@ -750,7 +628,7 @@ var LightMap = function(){
       *             zoom
       *             lazy - if true, the function doesn't loads the tiles of the new position 
       */
-    m.reallocateMap = function (lat,lon,zoom,lazy){
+    this.reallocateMap = function (lat,lon,zoom,lazy){
       m.reallocating = true;
       m.movingMap = true;
       lazy = typeof lazy == "undefined" ? false : lazy;
@@ -776,7 +654,7 @@ var LightMap = function(){
       }
       m.mouseDown = false;
       
-      m.center = LatLonToTile(lat, lon, zoom, false);
+      m.center = LightMap.LatLonToTile(lat, lon, zoom, m.tms, m.tileSize,m.initialResolution);
       //m.tiles = new Array(m.XnumberOfTiles);
       m.tiles = new Array();
       for (var i = 0; i < m.XnumberOfTiles; i++) {
@@ -789,16 +667,20 @@ var LightMap = function(){
           if(i==0 && j == 0){
             m.zeroTile.x=x;
             m.zeroTile.y=y;
-            var p = LightMap.GoogleTile(x, y, zoom) //Convert again to google tile to return to TMS
-            var bound = TileLatLonBounds(p.x, p.y, zoom ) //[ pmin.lat, pmin.lon, pmax.lat, pmax.lon ]
+            var p = {x:x,y:y};
+            if(!m.tms)
+              p = LightMap.GoogleTile(x, y, zoom) //Convert again to google tile to return to TMS
+            var bound = LightMap.TileLatLonBounds(p.x, p.y, zoom, m.tileSize, m.initialResolution ) //[ pmin.lat, pmin.lon, pmax.lat, pmax.lon ]
             m.bounds[2]=bound[2] //max lat
             m.bounds[1]=bound[1] //min lon
             m.boundsTMS[2] = x
             m.boundsTMS[1] = y
             bound = null;
           } else if(i+1 == m.XnumberOfTiles && j+1 == m.YnumberOfTiles){
-            var p = LightMap.GoogleTile(x, y, zoom) //Convert again to google tile to return to TMS
-            var bound = TileLatLonBounds(p.x, p.y, zoom ) //[ pmin.lat, pmin.lon, pmax.lat, pmax.lon ]
+            var p = {x:x,y:y};
+            if(!m.tms)
+              p = LightMap.GoogleTile(x, y, zoom) //Convert again to google tile to return to TMS
+            var bound = LightMap.TileLatLonBounds(p.x, p.y, zoom, m.tileSize, m.initialResolution ) //[ pmin.lat, pmin.lon, pmax.lat, pmax.lon ]
             m.bounds[0]=bound[0] //min lat
             m.bounds[3]=bound[3] //max lon
             m.boundsTMS[0] = x
@@ -863,7 +745,7 @@ var LightMap = function(){
       * Parameters:  x,y - Pixel coordinates
       * 
       */
-    m.moveToPosition = function (x,y){
+    this.moveToPosition = function (x,y){
       var w = m.width;
       var h = m.height;
       m.mousePosition.x = x;
@@ -886,7 +768,7 @@ var LightMap = function(){
       * Description: mouseover event handler
       * Parameters:  b - mouseover event 
       */
-    m.mouseover = function (b) {
+    this.mouseover = function (b) {
       var x = b.clientX;
       var y = b.clientY;
       m.mousePosition.x = b.clientX;
@@ -899,7 +781,7 @@ var LightMap = function(){
       * Description: click event handler
       * Parameters:  b - click event 
       */
-    m.click = function (b) {
+    this.click = function (b) {
       m.moveToPosition(b.clientX,b.clientY)
     }
 
@@ -908,7 +790,7 @@ var LightMap = function(){
       * Description: mousedown event handler
       * Parameters:  b - mousedown event 
       */
-    m.mousedown = function (e) {
+    this.mousedown = function (e) {
         m.viewingBox.style.cursor = "url(data:image/x-win-bitmap;base64,AAACAAEAICACAAcABQAwAQAAFgAAACgAAAAgAAAAQAAAAAEAAQAAAAAAAAEAAAAAAAAAAAAAAgAAAAAAAAAAAAAA////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD8AAAA/AAAAfwAAAP+AAAH/gAAB/8AAAH/AAAB/wAAA/0AAANsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//////////////////////////////////////////////////////////////////////////////////////gH///4B///8Af//+AD///AA///wAH//+AB///wAf//4AH//+AD///yT/////////////////////////////8=), default";
         // Save the current mouse position so we can later find how far the
         // mouse has moved in order to scroll that distance
@@ -939,7 +821,7 @@ var LightMap = function(){
       * Description: mouseup event handler
       * Parameters:  b - mouseup event 
       */
-    m.mouseup = function () {
+    this.mouseup = function () {
       if(m.mouseDown) {
         var handler = MouseMove;
         m.removeListener(document,"mousemove",handler);
@@ -992,7 +874,7 @@ var LightMap = function(){
        */
       _this.draw=function(){
         //lets find out how many pixels we have to add from the 0,0 pixel cordinate of the screen
-        var pos = LatLonToPixels(lat,lon,m.zeroTile.x,m.zeroTile.y,m.zoom);
+        var pos = LightMap.LatLonToPixels(lat,lon,m.zeroTile.x,m.zeroTile.y,m.zoom,m.tms,m.tileSize,m.initialResolution);
         var img = typeof _this.img == "undefined" || _this.img == null ?  document.createElement("img") :  _this.img;
         //var img = document.createElement("img");
         img.src = src;
@@ -1070,7 +952,6 @@ var LightMap = function(){
       m.markers.push(_this);
     }
     
-    
     //initial values
     m.firsttime= true;
     m.id=param.id;
@@ -1080,14 +961,15 @@ var LightMap = function(){
     m.zoom = typeof param.zoom == "undefined" ? 15 : param.zoom;
     m.width = typeof param.width == "undefined" ? 800 : param.width;
     m.height = typeof param.height == "undefined" ? 600 : param.height;
-    m.tileSize = typeof param.tileSize == "undefined" ? 256 : param.tileSize;
+    m.tileSize = typeof param.tileSize == "undefined" ? LightMap.tileSize : param.tileSize;
     m.scrolling = typeof param.scrolling == "undefined" ? true : param.scrolling;
     m.scrollTime = typeof param.scrollTime == "undefined" ? 300 : param.scrollTime;
     m.controls = typeof param.controls == "undefined" ? true : param.controls;
     m.container = typeof param.container == "undefined" ? "container" : param.container;
     m.loading = typeof param.loading == "undefined" ? 'resources/loading_caption.png' : param.loading;
+    m.tms = typeof param.tms == "undefined" ? false : param.tms;
     if(typeof param.getURL != "undefined") m.getURL = param.getURL;
-    m.initialResolution = 2 * Math.PI * 6378137 / m.tileSize // 156543.03392804062 for tileSize 256 pixels
+    m.initialResolution = LightMap.InitialResolution(m.tileSize); // 156543.03392804062 for tileSize 256 pixels
     
     // UI initialization
     m.viewingBox = document.createElement("div");
@@ -1177,7 +1059,7 @@ var LightMap = function(){
    * Description: Resolution (meters/pixel) for given zoom level (measured at Equator)
    *
    * Parameters:  zoom - zoom level
-   *              initialResolution - check LightMap.InitialResolution()
+   *              initialResolution - defaults to LightMap.initialResolution, check LightMap.InitialResolution() 
    */
   constructor.Resolution = function(zoom, initialResolution){
     if(typeof initialResolution == "undefined")
@@ -1192,7 +1074,7 @@ var LightMap = function(){
      * Parameters:  x - Longitude
      *              y - Latitude
      *              zoom - zoom level
-     *              initialResolution - check LightMap.InitialResolution()
+     *              initialResolution - defaults to LightMap.initialResolution, check LightMap.InitialResolution() 
      */
   constructor.MetersToPixels = function(mx, my, zoom , initialResolution){
     if(typeof initialResolution == "undefined")
@@ -1228,13 +1110,20 @@ var LightMap = function(){
    *              my - Latitude
    *              zoom - zoom level
    *              tileSize - defaults to LightMap.tileSize (256px)
+   *              initialResolution - defaults to LightMap.initialResolution, check LightMap.InitialResolution()  
+   *
+   * Note: initialResolution argument shouldn't be necessary but is added for 
+   *       optimization, don't provide it unless tile size other than 256.
    */
-  constructor.MetersToTile = function(mx, my, zoom, tileSize){
-    var initialResolution = LightMap.initialResolution;
+  constructor.MetersToTile = function(mx, my, zoom, tileSize, initialResolution){
     if(typeof tileSize == "undefined")
       tileSize = LightMap.tileSize;
-    else if(tileSize != LightMap.tileSize)
-      initialResolution = LightMap.InitialResolution(tileSize);
+    if(typeof initialResolution == "undefined"){
+      if(tileSize == LightMap.tileSize)
+        initialResolution = LightMap.initialResolution;
+      else
+        initialResolution = LightMap.InitialResolution(tileSize);
+    }
     var p = LightMap.MetersToPixels( mx, my, zoom, initialResolution);
     return LightMap.PixelsToTile(p.x, p.y, tileSize);
   }
@@ -1246,14 +1135,24 @@ var LightMap = function(){
    * Parameters:  lat - Latitude
    *              lon - Longitude
    *              zoom - zoom level
-   *              tms - use TMS or Google Tiles
+   *              tms - use TMS or Google Tiles 
    *              tileSize - defaults to LightMap.tileSize (256)
+   *              initialResolution - defaults to LightMap.initialResolution, check LightMap.InitialResolution() 
+   *
+   * Note: initialResolution argument shouldn't be necessary but is added for 
+   *       optimization, don't provide it unless tile size other than 256.
    */
-  constructor.LatLonToTile = function(lat, lon, zoom, tms, tileSize){
+  constructor.LatLonToTile = function(lat, lon, zoom, tms, tileSize, initialResolution){
     if(typeof tileSize == "undefined")
       tileSize = LightMap.tileSize;
+    if(typeof initialResolution == "undefined"){
+      if(tileSize == LightMap.tileSize)
+        initialResolution = LightMap.initialResolution;
+      else
+        initialResolution = LightMap.InitialResolution(tileSize);
+    }
     var p = LightMap.LatLonToMeters( lat, lon );
-    p = LightMap.MetersToTile( p.x, p.y, zoom, tileSize);
+    p = LightMap.MetersToTile( p.x, p.y, zoom, tileSize, initialResolution);
     if(tms)
       return p;
     else
@@ -1267,6 +1166,10 @@ var LightMap = function(){
    * Parameters: tileSize - defaults to LightMap.tileSize (256)
    */
   constructor.InitialResolution = function(tileSize){
+    if(typeof tileSize == "undefined")
+      tileSize = LightMap.tileSize;
+    if(tileSize == LightMap.tileSize)
+      return LightMap.initialResolution;
     return 2 * Math.PI * 6378137 / tileSize;
   }
 
@@ -1279,8 +1182,138 @@ var LightMap = function(){
    *              zoom - zoom level
    */
   constructor.GoogleTile = function(tx, ty, zoom){
-      //coordinate origin is moved from bottom-left to top-left corner of the extent
-      return {x:tx,y: (Math.pow(2,zoom) - 1) - ty,ty:ty}
+    //coordinate origin is moved from bottom-left to top-left corner of the extent
+    return {x:tx,y: (Math.pow(2,zoom) - 1) - ty,ty:ty}
+  }
+
+  /**
+    * Public Static Method: LightMap.LatLonToPixels()
+    * Description: Gets the distance in pixels from a tile à la Google coordinates to a lat,lon coordinates
+    * Parameters:  lat - The new y offset of the map
+    *              lon - The new x offset of the map
+    *              zoom - zoom level of the new center
+    *              x - Longitude tile à la Google coordinate of the reference
+    *              y - Latitude tile à la Google coordinate of the reference
+    *              tms - use TMS or Google Tiles (default false)
+    *              tileSize - defaults to LightMap.tileSize (256)
+    *              initialResolution - defaults to LightMap.initialResolution, check LightMap.InitialResolution() 
+    *
+    * Note: initialResolution argument shouldn't be necessary but is added for 
+    *       optimization, don't provide it unless tile size other than 256. aqui
+    */
+  constructor.LatLonToPixels = function (lat,lon,x,y,zoom,tms,tileSize,initialResolution){
+    if(typeof tms == "undefined")
+      tms = false;
+    if(typeof tileSize == "undefined")
+      tileSize = LightMap.tileSize;
+    if(typeof initialResolution == "undefined"){
+      if(tileSize == LightMap.tileSize)
+        initialResolution = LightMap.initialResolution;
+      else
+        initialResolution = LightMap.InitialResolution(tileSize);
+    }
+    //first translate from lat,lon to x,y,z tiles à la google maps.
+    var p = LightMap.LatLonToTile(lat, lon, zoom, tms, tileSize, initialResolution);
+    var bounds = null;
+    if(tms)
+      bounds = LightMap.TileLatLonBounds(p.x, p.y ,zoom, tileSize, initialResolution);
+    else
+      bounds = LightMap.TileLatLonBounds(p.x, p.ty ,zoom, tileSize, initialResolution);
+    //lets get the position of the point within the tile and then 
+    //add the pixels from the tile we were given to the tile we want
+    return {x: (( 1 - ((bounds[3]-lon)/(bounds[3]-bounds[1])))*tileSize) + ((p.x - x)*tileSize) , y: (((bounds[2]-lat)/(bounds[2]-bounds[0]))*tileSize) + ((p.y - y)*tileSize) };
+  }
+
+  /**
+   * Public Static Method: LightMap.TileLatLonBounds()
+   * Description: Returns bounds of the given tile in latitude/longitude using WGS84 datum
+   *
+   * Parameters:  tx - Longitude
+   *              ty - Latitude
+   *              zoom - zoom level
+   *              tileSize - defaults to LightMap.tileSize (256)
+   *              initialResolution - defaults to LightMap.initialResolution, check LightMap.InitialResolution() 
+   *
+   * Note: initialResolution argument shouldn't be necessary but is added for 
+   *       optimization, don't provide it unless tile size other than 256. 
+   */
+  constructor.TileLatLonBounds = function(tx, ty, zoom, tileSize, initialResolution){
+    if(typeof tileSize == "undefined")
+      tileSize = LightMap.tileSize;
+    if(typeof initialResolution == "undefined"){
+      if(tileSize == LightMap.tileSize)
+        initialResolution = LightMap.initialResolution;
+      else
+        initialResolution = LightMap.InitialResolution(tileSize);
+    }
+    var bounds = LightMap.TileBounds( tx, ty, zoom, tileSize, initialResolution);
+    var pmin = LightMap.MetersToLatLon(bounds[0], bounds[1]);
+    var pmax = LightMap.MetersToLatLon(bounds[2], bounds[3]);
+     
+    return [ pmin.lat, pmin.lon, pmax.lat, pmax.lon ];
+  }
+
+  /**
+   * Public Static Method: LightMap.TileBounds()
+   * Description: Returns bounds of the given tile in EPSG:900913 coordinates
+   *
+   * Parameters:  tx - Longitude
+   *              ty - Latitude
+   *              zoom - zoom level
+   *              tileSize - defaults to LightMap.tileSize (256)
+   *              initialResolution - defaults to LightMap.initialResolution, check LightMap.InitialResolution() 
+   *
+   * Note: initialResolution argument shouldn't be necessary but is added for 
+   *       optimization, don't provide it unless tile size other than 256. 
+   */
+  constructor.TileBounds = function (tx, ty, zoom, tileSize, initialResolution){
+    if(typeof tileSize == "undefined")
+      tileSize = LightMap.tileSize;
+    if(typeof initialResolution == "undefined"){
+      if(tileSize == LightMap.tileSize)
+        initialResolution = LightMap.initialResolution;
+      else
+        initialResolution = LightMap.InitialResolution(tileSize);
+    }
+    var pmin = LightMap.PixelsToMeters( tx*tileSize, ty*tileSize, zoom, initialResolution)
+    var pmax = LightMap.PixelsToMeters( (tx+1)*tileSize, (ty+1)*tileSize, zoom, initialResolution)
+    return [ pmin.x, pmin.y, pmax.x, pmax.y ];
+  }
+
+  /**
+   * Public Static Method: LightMap.MetersToLatLon()
+   * Description: Converts XY point from Spherical Mercator EPSG:900913 to lat/lon in WGS84 Datum
+   *
+   * Parameters:  mx - Longitude
+   *              my - Latitude
+   */
+  constructor.MetersToLatLon = function (mx, my){
+    var lon = (mx / LightMap.originShift) * 180.0;
+    var lat = (my / LightMap.originShift) * 180.0;
+
+    lat = 180 / Math.PI * (2 * Math.atan( Math.exp( lat * Math.PI / 180.0)) - Math.PI / 2.0);
+    return {lat:lat,lon:lon};
+  }
+
+  /**
+   * Public Static Method: LightMap.PixelsToMeters()
+   * Description: Converts pixel coordinates in given zoom level of pyramid to EPSG:900913
+   *
+   * Parameters:  px - Longitude
+   *              py - Latitude
+   *              zoom - zoom level
+   *              initialResolution - defaults to LightMap.initialResolution, check LightMap.InitialResolution() 
+   *
+   * Note: initialResolution argument shouldn't be necessary but is added for 
+   *       optimization, don't provide it unless tile size other than 256. 
+   */
+  constructor.PixelsToMeters = function(px, py, zoom, initialResolution){
+    if(typeof initialResolution == "undefined")
+      initialResolution = LightMap.initialResolution;
+    res = LightMap.Resolution(zoom, initialResolution);
+    mx = px * res - LightMap.originShift;
+    my = py * res - LightMap.originShift;
+    return {x:mx,y: my};
   }
 
   return constructor;
