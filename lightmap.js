@@ -31,7 +31,7 @@ For the SpryMap widget that makes scrollable divs.
 
 
   TO-DO:
-    * Add scrolling event for zooming.
+    * Add pinch(in/out) touch events.
     * Identation fixes.
     * Add comments to explain the code.
     * Add aditional layers.
@@ -740,6 +740,22 @@ var LightMap = function(){
     };
 
     /**
+     * Private Function:        mousewheel()
+     * Description: mousewheel event handler
+     */
+    this.mousewheel = function(e){
+      if(m.mousewheelZooming){
+        var e = window.event || e; // old IE support
+        var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+        if(delta>0){
+          m.zoomIn();
+        }else{
+          m.zoomOut();
+        }
+      }
+    }
+
+    /**
       * Public Function:        moveToPosition
       * Description: Moves the map to a given pixel position
       * Parameters:  x,y - Pixel coordinates
@@ -968,6 +984,7 @@ var LightMap = function(){
     m.container = typeof param.container == "undefined" ? "container" : param.container;
     m.loading = typeof param.loading == "undefined" ? 'resources/loading_caption.png' : param.loading;
     m.tms = typeof param.tms == "undefined" ? false : param.tms;
+    m.mousewheelZooming = typeof param.mousewheelZooming == "undefined" ? true : param.mousewheelZooming;
     if(typeof param.getURL != "undefined") m.getURL = param.getURL;
     m.initialResolution = LightMap.InitialResolution(m.tileSize); // 156543.03392804062 for tileSize 256 pixels
     
@@ -1025,6 +1042,7 @@ var LightMap = function(){
     m.yOffset = m.yOffsetCenter;
     m.reallocateMap(m.WGScenter.lat, m.WGScenter.lon, m.zoom, true);
     //add mouse event listeners
+    m.AddListener(m.viewingBox, "mousewheel", m.mousewheel);
     m.AddListener(m.viewingBox, "mousedown", m.mousedown);
     m.AddListener(document, "mouseup", m.mouseup);
     //m.AddListener(m.viewingBox, "mousemove", m.mouseover);
