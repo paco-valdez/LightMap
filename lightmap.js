@@ -746,6 +746,8 @@ var LightMap = function(){
     this.mousewheel = function(e){
       if(m.mousewheelZooming){
         var e = window.event || e; // old IE support
+        if(typeof e.preventDefault != "undefined")
+          e.preventDefault();
         var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
         if(delta>0){
           m.zoomIn();
