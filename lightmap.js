@@ -987,6 +987,7 @@ var LightMap = function(){
     m.mousewheelZooming = typeof param.mousewheelZooming == "undefined" ? true : param.mousewheelZooming;
     if(typeof param.getURL != "undefined") m.getURL = param.getURL;
     m.initialResolution = LightMap.InitialResolution(m.tileSize); // 156543.03392804062 for tileSize 256 pixels
+    m.attributions = typeof param.attributions == "undefined" ? { title: '&copy; OpenStreetMap contributors', link : 'http://www.openstreetmap.org/copyright'} : param.attributions;
     
     // UI initialization
     m.viewingBox = document.createElement("div");
@@ -998,6 +999,19 @@ var LightMap = function(){
     m.viewingBox.style.height = m.height + "px";
     m.viewingBox.style.position = "relative";
     m.over = false;
+    var attrib = document.createElement("div");
+    attrib.id = "attributions";
+    attrib.innerHTML = '<small><a href="'+m.attributions.link+'">'+m.attributions.title+'</a></small>';
+    var cssText = '-khtml-opacity:.60;-moz-opacity:.60;-ms-filter:”alpha(opacity=60)”;filter:alpha(opacity=60);filter: progid:DXImageTransform.Microsoft.Alpha(opacity=0.6);opacity:.60;'
+    if(typeof attrib.setAttribute != "undefined")
+      attrib.setAttribute("style", cssText);
+    attrib.style.cssText = cssText;
+    attrib.style.zIndex =5;
+    attrib.style.left = 0;
+    attrib.style.bottom = 0;
+    attrib.style.position = "absolute";
+    attrib.style.backgroundColor = '#FFFFFF'
+    m.viewingBox.parentNode.appendChild(attrib);
     if(m.controls){
       //var container = document.getElementById(m.container);
       var container = m.viewingBox.parentNode;
@@ -1022,6 +1036,8 @@ var LightMap = function(){
       m.AddListener(img, "click", m.zoomOut);
       container.appendChild(img);
     }
+
+
     m.map.style.position = "absolute";
     if(typeof param.cssClass != "undefined") m.viewingBox.className = param.cssClass;
     m.calculateSize();
