@@ -41,8 +41,8 @@ History
 -------------
 
     I needed a maps API that was compatible with old Blackberry devices, so after trying google maps and 
-    openlayers I realized that I needed a very basic maps API, with only the essential functionalities deployed.
-    I've used it at several web pages where maps are needed but without compromising performance and data storage.
+    openlayers I realized that I needed a very basic maps API, with only the essential functionalities implemented.
+    I've used it at several web pages where maps are needed but without compromising performance and memory usage.
     I know it has it flaws versus OpenLayers but it does extremly well what it does.
 
     So, What do we need to make an API like OpenLayers?, well we need to calculate the 
